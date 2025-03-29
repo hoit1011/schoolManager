@@ -10,8 +10,12 @@ import SwiftUI
 @main
 struct menuBarAppApp: App {
     var body: some Scene {
-        WindowGroup {
+        MenuBarExtra {
             ContentView()
+                .background(.clear)
+        } label: {
+            Image(systemName: "switch.2")   
         }
+        .menuBarExtraStyle(.window)
     }
 }
