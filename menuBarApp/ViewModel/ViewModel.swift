@@ -3,29 +3,29 @@ import Combine
 import SwiftUI
 
 class DateViewModel: ObservableObject {
+    
     @Published var currentPeriodInfo: String = ""
     @Published var countdownInfo: String = ""
-    
     @Published var progressValue: CGFloat = 0.0
+    @Published var showProgressBar: Bool = false
+    
+    var isTesting: Bool = true
     
     private var timer: Timer?
     
-    let classPeriods: [ClassPeriod] = [
-        ClassPeriod(periodNumber: 1, subject: "1교시", startTime: "08:40", endTime: "09:30"),
-        ClassPeriod(periodNumber: 2, subject: "2교시", startTime: "09:40", endTime: "10:30"),
-        ClassPeriod(periodNumber: 3, subject: "3교시", startTime: "10:40", endTime: "11:30"),
-        ClassPeriod(periodNumber: 4, subject: "4교시", startTime: "11:40", endTime: "12:30"),
-        ClassPeriod(periodNumber: 5, subject: "5교시", startTime: "13:40", endTime: "14:30"),
-        ClassPeriod(periodNumber: 6, subject: "6교시", startTime: "14:40", endTime: "15:30"),
-        ClassPeriod(periodNumber: 7, subject: "7교시", startTime: "15:50", endTime: "16:30"),
-        ClassPeriod(periodNumber: 8, subject: "방과후", startTime: "16:40", endTime: "18:10"),
-        ClassPeriod(periodNumber: 9, subject: "야자", startTime: "19:10", endTime: "20:30")
-    ]
+    let weekdaySchedules = ScheduleData.weekdaySchedules
+    
+    var currentDaySchedule: DailySchedule? {
+        let weekdayValue = isTesting ? 2 : Calendar.current.component(.weekday, from: Date())
+        guard let weekday = Weekday(rawValue: weekdayValue) else { return nil }
+        return weekdaySchedules.first { $0.weekday == weekday }
+    }
     
     var scheduleSegments: [ScheduleSegment] {
+        guard let periods = currentDaySchedule?.classPeriods else { return [] }
         var segments = [ScheduleSegment]()
         
-        if let first = classPeriods.first {
+        if let first = periods.first {
             segments.append(
                 ScheduleSegment(title: first.subject,
                                 startTime: first.startTime,
@@ -33,9 +33,9 @@ class DateViewModel: ObservableObject {
             )
         }
         
-        for i in 1..<classPeriods.count {
-            let previous = classPeriods[i - 1]
-            let current = classPeriods[i]
+        for i in 1..<periods.count {
+            let previous = periods[i - 1]
+            let current = periods[i]
             
             let breakStart = previous.endTime
             let breakEnd = current.startTime
@@ -71,6 +71,16 @@ class DateViewModel: ObservableObject {
     }
     
     func updateTime() {
+        let weekdayValue = isTesting ? 2 : Calendar.current.component(.weekday, from: Date())
+        
+        if !isTesting && (weekdayValue == 1 || weekdayValue == 7) {
+            currentPeriodInfo = "주말입니다"
+            countdownInfo = ""
+            progressValue = 0
+            showProgressBar = false
+            return
+        }
+        
         let now = Date()
         let segments = scheduleSegments
         
@@ -103,12 +113,11 @@ class DateViewModel: ObservableObject {
                 
                 let fraction = remaining / total
                 progressValue = CGFloat(max(0, min(1, fraction)))
-                
             } else {
                 progressValue = 0
             }
-        }
-        else {
+            showProgressBar = true
+        } else {
             if let first = segments.first,
                let firstStart = DateUtils.dateFromTimeString(first.startTime),
                now < firstStart {
@@ -122,6 +131,7 @@ class DateViewModel: ObservableObject {
                 countdownInfo = ""
             }
             progressValue = 0
+            showProgressBar = false
         }
     }
 }

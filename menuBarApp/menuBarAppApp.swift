@@ -11,7 +11,7 @@ import SwiftUI
 struct menuBarAppApp: App {
     var body: some Scene {
         MenuBarExtra {
-            ContentView()
+            RootView()
                 .background(.clear)
         } label: {
             Image(systemName: "switch.2")   
